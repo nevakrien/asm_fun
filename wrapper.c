@@ -21,7 +21,7 @@ int main() {
     long long result = x86_sqrt(4);  // Call the assembly function and get the result
     printf("sqrt is: %lld\n", result);  // Print the result
 
-    factor_list ans=x86_prime_factors(5);
+    factor_list ans=x86_prime_factors(11*19);
     if(ans.factors==NULL){
     	perror("something went wrong got null\n");
     	return 1;

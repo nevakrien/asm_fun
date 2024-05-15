@@ -71,8 +71,10 @@ x86_prime_factors:
 
 	;check 2
 	;bsr rcx, rcx
-	bsr rcx, rdx
+	;bsr seems to be wrong
+	bsf rcx, rdx
 	
+	test rcx,rcx
 	jz check_3
 	shr r10,cl
 
@@ -81,20 +83,19 @@ x86_prime_factors:
 	sub rsp, 9           
 	mov qword [rsp+1], 2
 	mov  [rsp], cl ;needs to be 1 byte only
-	
 
+	check_3:
 	;same logic for 3 now we need div
 	mov r8,3
 	cmp r10,r8
 	jng return
 
-	check_3:
 	;divide by 3
 	mov rax,r10
 	xor rdx,rdx
 	div r8;	
 	test rdx,rdx
-	jz setup_6_loop
+	jnz setup_6_loop
 
 	
 	;done in loop anyway ;mov r10,rax
@@ -119,18 +120,32 @@ x86_prime_factors:
 	mov rcx,r10
 	call x86_sqrt
 	mov r9,rax ;now we have a cap
+	add r9,1
 
-	xor r8,r8
-	;jmp main_loop
+	mov r8,5
+	jmp check_6k_m
+	
+	; xor r8,r8
+	; jmp main_loop
 
 	align 16
 	main_loop:
-	add r8,5 ;r8 holds our dividsor
+	add r8,4 ;r8 holds our dividsor
 
 	cmp r9,r8
-	jng return
+	jng handle_last ;wrong!!! this means that if the value isnt 1 we need to return
 	cmp r10,r8
 	jae check_6k_m
+	
+	handle_last:
+		cmp r10,1 
+		jz return
+
+		;add r10 to the list
+		inc r12b
+		sub rsp, 9           
+		mov qword [rsp+1], r10
+		mov  byte [rsp], 1
 	
 	return:
 		sub rdi,rsp
@@ -175,26 +190,27 @@ x86_prime_factors:
  
 		ret
 
+	;we are not covering the 1 case
 	check_6k_m:
 		;divide by r8
 		mov rax,r10
 		xor rdx,rdx
 		div r8;	
 		test rdx,rdx
-		jz check_6k_p
+		jnz check_6k_p
 
 		
 		;done in loop anyway ;mov r10,rax
 		inc r12b
 
 		sub rsp, 9           
-		mov qword [rsp+1], 3
+		mov qword [rsp+1], r8
 		xor rcx,rcx ;rcx holds the current div count
-
+		
 		align 16
 		loop_6k_m:
 			mov r10,rax
-			add rcx,1
+			add rcx,1 ;prematurly update since we are 1 update behind
 			xor rdx,rdx
 			div r8;	
 			test rdx,rdx
@@ -210,14 +226,14 @@ x86_prime_factors:
 		xor rdx,rdx
 		div r8;	
 		test rdx,rdx
-		jz main_loop
+		jnz main_loop
 
 		
 		;done in loop anyway ;mov r10,rax
 		inc r12b
 
 		sub rsp, 9           
-		mov qword [rsp+1], 3
+		mov qword [rsp+1], r8
 		xor rcx,rcx ;rcx holds the current div count
 
 		align 16
