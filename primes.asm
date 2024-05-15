@@ -1,11 +1,15 @@
 ;windows calling convention!!!!
+;default rel ;linux attempt
+
 extern malloc
+
 
 section .text
 global x86_sqrt
-global x86_prime_list
+global x86_prime_factors
+;extern malloc ;linux attempt
 
-;if u refactor this make sure to check x86_prime_list that u didnt take too many registers
+;if u refactor this make sure to check x86_prime_factors that u didnt take too many registers
 x86_sqrt:
     ; Assume input x is in rcx
     test rcx, rcx         ; Check if input is zero
@@ -48,21 +52,27 @@ x86_sqrt:
         xor rax, rax        ; If input is zero, return zero
         ret
 
-x86_prime_list:
+;calling convention hell
+x86_prime_factors:
 	push rsp
 	push r12 ;counter
 	push rdi
+	push r13 ;for saving the return adress????
 	
+	mov r13,rcx
 
-
+	;seems that edx may hold the arguments need to double check here
 	mov rdi,rsp ;keep base so we can work.
 
-	mov r10,rcx ;r10 holds the number
+	;mov r10,rcx ;r10 holds the number
+	mov r10,rdx ;r10 holds the number
 
 	xor r12,r12 ;number of factors
 
 	;check 2
-	bsr rcx, rcx
+	;bsr rcx, rcx
+	bsr rcx, rdx
+	
 	jz check_3
 	shr r10,cl
 
@@ -75,6 +85,9 @@ x86_prime_list:
 
 	;same logic for 3 now we need div
 	mov r8,3
+	cmp r10,r8
+	jng return
+
 	check_3:
 	;divide by 3
 	mov rax,r10
@@ -126,9 +139,6 @@ x86_prime_list:
 		test rax,rax
 		jz err_return
 		
-		;setup rdx for the return
-		mov rdx,r12
-
 		;memcpy the stack into the malloced memory
 		;we will and at ;add rdi,rsp ;our base pointer
 		
@@ -147,11 +157,22 @@ x86_prime_list:
 		;reset stack 8+8+8=24
 		add rdi,rsp ;undo our subtruction
 		lea rsp,[rdi-24]
+		xor r12,r12
 
 	general_return:
+		;mov rdx,r12
+		;apperently this is how we return things?
+	    mov [r13], rax        
+	    ;mov rax, r13          ; gcc did this on O3 idx why
+	    ;mov rcx, r13			; also an assumbtion that can be made
+	    mov BYTE [8+r13], r12b  
+
+
+		pop r13
 		pop rdi
 		pop r12
 		pop rsp
+ 
 		ret
 
 	check_6k_m:
